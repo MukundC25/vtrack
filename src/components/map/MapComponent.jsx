@@ -1,21 +1,50 @@
+/**
+ * MapComponent.jsx
+ *
+ * This component renders the Google Maps interface for the vehicle tracking application.
+ * It displays the current location of the vehicle and allows navigation to a full-screen map view.
+ *
+ * Features:
+ * - Integrates with Google Maps API
+ * - Supports dark/light mode with custom map styling
+ * - Shows vehicle location with a custom marker
+ * - Provides navigation to full-screen map view
+ * - Handles loading states gracefully
+ *
+ * @author Your Name
+ * @version 1.0.0
+ * @date June 10, 2024
+ */
+
 import React, { useContext, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { ThemeContext } from '../../context/ThemeContext';
 import VehicleMarker from './VehicleMarker';
 
+/**
+ * Container style for the Google Map component
+ * Sets the map to fill its parent container
+ */
 const containerStyle = {
   width: '100%',
   height: '100%'
 };
 
-// Default center (Pune, India)
+/**
+ * Default center coordinates for the map (Pune, India)
+ * Used when no vehicle position is available
+ */
 const defaultCenter = {
-  lat: 18.5204,
-  lng: 73.8567
+  lat: 18.5204, // Latitude for Pune, India
+  lng: 73.8567  // Longitude for Pune, India
 };
 
-// Night mode style for Google Maps
+/**
+ * Custom styling for Google Maps in dark mode
+ * This styling is applied when the application is in dark mode
+ * It provides a dark-themed map that's easier on the eyes in low-light environments
+ */
 const darkModeStyle = [
   { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
@@ -97,24 +126,47 @@ const darkModeStyle = [
   },
 ];
 
+/**
+ * MapComponent - Renders a Google Map showing vehicle location
+ *
+ * @param {Object} props - Component props
+ * @param {Object} props.position - The vehicle's current position (lat/lng)
+ * @returns {JSX.Element} - Rendered component
+ */
 const MapComponent = ({ position }) => {
+  // Access theme context to apply appropriate styling
   const { isDarkMode } = useContext(ThemeContext);
+  // Navigation hook for redirecting to full map view
   const navigate = useNavigate();
+  // State to store the map instance
   const [map, setMap] = useState(null);
 
+  // Load the Google Maps JavaScript API
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: 'AIzaSyAD_jCqoP0qoh05t1ShKDwxRQd02pOM7Ts'
+    googleMapsApiKey: 'AIzaSyAD_jCqoP0qoh05t1ShKDwxRQd02pOM7Ts' // Google Maps API key
   });
 
+  /**
+   * Callback function that runs when the map is loaded
+   * Stores the map instance in state for potential later use
+   */
   const onLoad = useCallback(function callback(map) {
     setMap(map);
   }, []);
 
+  /**
+   * Callback function that runs when the component unmounts
+   * Cleans up the map instance to prevent memory leaks
+   */
   const onUnmount = useCallback(function callback(map) {
     setMap(null);
   }, []);
 
+  /**
+   * Render loading state while Google Maps API is being loaded
+   * Shows a centered loading message with appropriate theme styling
+   */
   if (!isLoaded) {
     return (
       <div style={{
@@ -130,38 +182,47 @@ const MapComponent = ({ position }) => {
     );
   }
 
+  /**
+   * Render the Google Map with vehicle marker and UI overlays
+   * The entire component is clickable and navigates to the full map view
+   */
   return (
-    <div style={{ height: '100%', width: '100%', position: 'relative', cursor: 'pointer' }} onClick={() => navigate('/map')}>
+    <div
+      style={{ height: '100%', width: '100%', position: 'relative', cursor: 'pointer' }}
+      onClick={() => navigate('/map')} // Navigate to full map view on click
+    >
+      {/* Google Map Component */}
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={position || defaultCenter}
-        zoom={15}
+        center={position || defaultCenter} // Use vehicle position or default to Pune
+        zoom={15} // Street-level zoom
         onLoad={onLoad}
         onUnmount={onUnmount}
         options={{
-          zoomControl: false,
-          streetViewControl: false,
-          mapTypeControl: false,
-          fullscreenControl: false,
-          styles: isDarkMode ? darkModeStyle : [],
+          zoomControl: false, // Hide zoom controls for cleaner UI
+          streetViewControl: false, // Hide street view
+          mapTypeControl: false, // Hide map type selector
+          fullscreenControl: false, // Hide fullscreen button
+          styles: isDarkMode ? darkModeStyle : [], // Apply dark mode styling when appropriate
         }}
       >
+        {/* Vehicle position marker - only shown when position is available */}
         {position && (
           <Marker
             position={position}
             icon={{
               path: window.google.maps.SymbolPath.CIRCLE,
-              scale: 8,
-              fillColor: '#3b82f6',
+              scale: 8, // Size of the marker
+              fillColor: '#3b82f6', // Blue fill
               fillOpacity: 1,
-              strokeColor: '#ffffff',
+              strokeColor: '#ffffff', // White border
               strokeWeight: 2,
             }}
           />
         )}
       </GoogleMap>
 
-      {/* Expand indicator */}
+      {/* Expand indicator - shows that the map can be expanded */}
       <div style={{
         position: 'absolute',
         top: '8px',
@@ -177,7 +238,7 @@ const MapComponent = ({ position }) => {
         </svg>
       </div>
 
-      {/* Tap to view full map */}
+      {/* Instruction overlay - informs user they can tap for full view */}
       <div style={{
         position: 'absolute',
         bottom: '8px',
