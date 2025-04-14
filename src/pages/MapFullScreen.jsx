@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { ThemeContext } from '../context/ThemeContext';
 import MobileFrame from '../components/ui/MobileFrame';
+import FallbackMap from '../components/map/FallbackMap';
 
 const MapFullScreen = () => {
   const { isDarkMode } = useContext(ThemeContext);
@@ -17,10 +18,20 @@ const MapFullScreen = () => {
   // Google Maps API setup
   const [map, setMap] = useState(null);
 
-  const { isLoaded } = useJsApiLoader({
+  const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: 'AIzaSyAD_jCqoP0qoh05t1ShKDwxRQd02pOM7Ts'
   });
+
+  // Log any loading errors
+  React.useEffect(() => {
+    if (loadError) {
+      console.error('Error loading Google Maps API:', loadError);
+    }
+  }, [loadError]);
+
+  // Use fallback map only if there's an error loading Google Maps
+  const useFallbackMap = loadError;
 
   const onLoad = useCallback(function callback(map) {
     setMap(map);
@@ -164,7 +175,11 @@ const MapFullScreen = () => {
 
         {/* Map */}
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          {!isLoaded ? (
+          {useFallbackMap ? (
+            <div style={{ height: '100%', width: '100%', position: 'relative' }}>
+              <FallbackMap position={vehiclePosition} />
+            </div>
+          ) : !isLoaded ? (
             <div style={{
               height: '100%',
               width: '100%',

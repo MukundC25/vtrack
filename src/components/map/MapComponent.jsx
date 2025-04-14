@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { ThemeContext } from '../../context/ThemeContext';
 import VehicleMarker from './VehicleMarker';
+import FallbackMap from './FallbackMap';
 
 /**
  * Container style for the Google Map component
@@ -142,10 +143,20 @@ const MapComponent = ({ position }) => {
   const [map, setMap] = useState(null);
 
   // Load the Google Maps JavaScript API
-  const { isLoaded } = useJsApiLoader({
+  const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: 'AIzaSyAD_jCqoP0qoh05t1ShKDwxRQd02pOM7Ts' // Google Maps API key
   });
+
+  // Log any loading errors
+  React.useEffect(() => {
+    if (loadError) {
+      console.error('Error loading Google Maps API:', loadError);
+    }
+  }, [loadError]);
+
+  // Use fallback map only if there's an error loading Google Maps
+  const useFallbackMap = loadError;
 
   /**
    * Callback function that runs when the map is loaded
@@ -167,6 +178,12 @@ const MapComponent = ({ position }) => {
    * Render loading state while Google Maps API is being loaded
    * Shows a centered loading message with appropriate theme styling
    */
+  // Use fallback map if there's an error loading Google Maps
+  if (useFallbackMap) {
+    return <FallbackMap position={position} />;
+  }
+
+  // Show loading indicator while Google Maps is loading
   if (!isLoaded) {
     return (
       <div style={{
