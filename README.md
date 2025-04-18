@@ -44,6 +44,7 @@ vtrack/
 - Node.js (v14 or later)
 - MongoDB (local or Atlas)
 - Google Maps API key
+- Docker and Docker Compose (for containerized setup)
 
 ### Installation
 
@@ -75,6 +76,27 @@ vtrack/
 
 ### Running the Application
 
+#### Option 1: Using Docker (Recommended)
+
+This project is configured to run in an isolated Docker container to prevent version conflicts with other projects.
+
+1. Build and start the container:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. Access the application at:
+   ```
+   http://localhost:5500
+   ```
+
+3. To stop the container:
+   ```bash
+   docker-compose down
+   ```
+
+#### Option 2: Running Locally
+
 1. Start the backend server:
    ```
    cd server
@@ -84,7 +106,7 @@ vtrack/
 2. Start the frontend development server:
    ```
    # In the root directory
-   npm run dev
+   npm run dev -- --port 5500
    ```
 
 3. To simulate ESP32 location updates (for testing):
