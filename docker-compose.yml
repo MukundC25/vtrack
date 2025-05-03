@@ -1,0 +1,14 @@
+services:
+  vtrack:
+    build: .
+    container_name: vtrack-app
+    ports:
+      - "5500:5500"
+    restart: unless-stopped
+    networks:
+      - vtrack-network
+
+networks:
+  vtrack-network:
+    name: vtrack-network
+    driver: bridge
