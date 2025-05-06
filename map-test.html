@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Map Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Access-Control-Allow-Origin" content="*">
+    <meta http-equiv="Access-Control-Allow-Methods" content="GET, POST, OPTIONS">
+    <meta http-equiv="Access-Control-Allow-Headers" content="Origin, X-Requested-With, Content-Type, Accept">
+    <style>
+        :root {
+            --bg-light: #f8f9fa;
+            --text-light: #333333;
+            --card-bg-light: #ffffff;
+            --card-border-light: #e5e7eb;
+
+            --bg-dark: #121212;
+            --text-dark: #e5e7eb;
+            --card-bg-dark: #1f2937;
+            --card-border-dark: #374151;
+        }
+
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.light-mode {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+
+        body.dark-mode {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        h1 {
+            text-align: center;
+            margin: 10px 0;
+            padding: 0 20px;
+            transition: color 0.3s ease;
+        }
+
+        body.light-mode h1 {
+            color: var(--text-light);
+        }
+
+        body.dark-mode h1 {
+            color: var(--text-dark);
+        }
+
+        #map-container {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+        }
+
+        #location {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            z-index: 10;
+            transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+            max-width: 80%;
+            font-size: 0.9em;
+        }
+
+        body.light-mode #location {
+            background-color: var(--card-bg-light);
+            color: var(--text-light);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--card-border-light);
+        }
+
+        body.dark-mode #location {
+            background-color: var(--card-bg-dark);
+            color: var(--text-dark);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--card-border-dark);
+        }
+
+        button {
+            padding: 10px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #2563eb;
+        }
+
+
+
+        .button-container {
+            margin: 10px 20px 20px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .button-container {
+                justify-content: center;
+            }
+
+            button {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAD_jCqoP0qoh05t1ShKDwxRQd02pOM7Ts&callback=initMap" async defer></script>
+</head>
+<body>
+    <div id="map-container">
+        <div id="map"></div>
+        <div id="location">Loading location...</div>
+    </div>
+
+    <script>
+        let map;
+        let marker;
+        const serverUrl = 'http://192.168.169.156:5003';
+
+        // Initialize the map
+        function initMap() {
+            console.log('Initializing map...');
+
+            // Default center (Pune)
+            const defaultCenter = {
+                lat: 18.5204,
+                lng: 73.8567
+            };
+
+            // Wait for DOM to be fully loaded
+            setTimeout(() => {
+                try {
+                    // Create the map
+                    map = new google.maps.Map(document.getElementById('map'), {
+                        center: defaultCenter,
+                        zoom: 15,
+                        disableDefaultUI: false,
+                        zoomControl: true,
+                        streetViewControl: false,
+                        mapTypeControl: true,
+                        fullscreenControl: true,
+                        styles: [
+                            {
+                                featureType: "poi",
+                                elementType: "labels",
+                                stylers: [{ visibility: "off" }]
+                            }
+                        ]
+                    });
+
+                    // Force a resize event to ensure the map renders correctly
+                    google.maps.event.trigger(map, 'resize');
+
+                    // Create the marker
+                    marker = new google.maps.Marker({
+                        position: defaultCenter,
+                        map: map,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 8,
+                            fillColor: '#3b82f6',
+                            fillOpacity: 1,
+                            strokeColor: '#ffffff',
+                            strokeWeight: 2
+                        }
+                    });
+
+                    console.log('Map initialized successfully');
+
+                    // Fetch location immediately
+                    fetchLocation();
+
+                    // Set up polling interval
+                    setInterval(fetchLocation, 1000);
+                } catch (error) {
+                    console.error('Error initializing map:', error);
+                    document.getElementById('map').innerHTML = `
+                        <div style="display: flex; align-items: center; justify-content: center; height: 100%; background-color: #f3f4f6; color: #ef4444; text-align: center; padding: 20px;">
+                            <div>
+                                <p><strong>Error loading map:</strong> ${error.message}</p>
+                                <p>Please check your internet connection and try again.</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            }, 500); // Short delay to ensure DOM is ready
+        }
+
+        // Fetch the latest location
+        function fetchLocation() {
+            console.log('Fetching latest location...');
+
+            // Add a timestamp to prevent caching
+            const timestamp = new Date().getTime();
+
+            fetch(`${serverUrl}/api/location/latest?t=${timestamp}`, {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Received location data:', data);
+
+                if (data && data.position) {
+                    // Parse position values to ensure they are numbers
+                    const position = {
+                        lat: parseFloat(data.position.lat),
+                        lng: parseFloat(data.position.lng)
+                    };
+
+                    console.log('Parsed position:', position);
+
+                    // Update marker position
+                    if (marker) {
+                        marker.setPosition(position);
+                    }
+
+                    // Pan the map to the new position
+                    if (map) {
+                        map.panTo(position);
+                    }
+
+                    // Update location display
+                    const locationDiv = document.getElementById('location');
+                    const isDarkMode = document.body.classList.contains('dark-mode');
+
+                    locationDiv.innerHTML = `
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="padding-right: 8px;">
+                                <h3 style="font-weight: bold; font-size: 16px; margin: 0 0 2px 0;">
+                                    Yamaha FZ-S V4 <span style="color: ${isDarkMode ? '#9ca3af' : '#6b7280'}; font-size: 11px;">(MH50-329)</span>
+                                </h3>
+                                <p style="font-size: 12px; color: ${isDarkMode ? '#9ca3af' : '#6b7280'}; margin: 0;">
+                                    Location: ${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}
+                                </p>
+                            </div>
+                            <div style="flex-shrink: 0; margin-left: 8px;">
+                                <div style="width: 32px; height: 32px; background-color: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+                                        <circle cx="12" cy="10" r="3"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching location:', error);
+                const locationDiv = document.getElementById('location');
+                const isDarkMode = document.body.classList.contains('dark-mode');
+
+                locationDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h3 style="font-weight: bold; font-size: 18px; margin: 0 0 4px 0; color: #ef4444;">
+                                Connection Error
+                            </h3>
+                            <p style="font-size: 14px; color: ${isDarkMode ? '#9ca3af' : '#6b7280'}; margin: 0;">
+                                Retrying in 5 seconds...
+                            </p>
+                        </div>
+                        <div style="flex-shrink: 0; margin-left: 8px;">
+                            <div style="width: 40px; height: 40px; background-color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Try again after a short delay
+                setTimeout(fetchLocation, 5000);
+            });
+        }
+
+        // Send a test location
+        function sendTestLocation(lat, lng) {
+            console.log(`Sending test location: ${lat}, ${lng}`);
+
+            fetch(`${serverUrl}/api/devices/ESP32-001/location`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache'
+                },
+                body: JSON.stringify({
+                    deviceId: 'ESP32-001',
+                    latitude: lat,
+                    longitude: lng,
+                    speed: 30
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response:', data);
+
+                // Fetch the latest location immediately
+                setTimeout(fetchLocation, 500);
+            })
+            .catch(error => {
+                console.error('Error sending test location:', error);
+                alert(`Error sending test location: ${error.message}`);
+            });
+        }
+
+
+
+        // Listen for messages from parent window (React app)
+        window.addEventListener('message', function(event) {
+            console.log('Received message from parent:', event.data);
+
+            // Check if the message is to reload the map
+            if (event.data && event.data.type === 'RELOAD_MAP') {
+                console.log('Received reload message, fetching location...');
+                fetchLocation();
+
+                // Also trigger a resize event to ensure the map renders correctly
+                if (map) {
+                    console.log('Triggering resize event on map');
+                    setTimeout(() => {
+                        google.maps.event.trigger(map, 'resize');
+                    }, 100);
+                }
+            }
+
+            // Check if the message is to update the theme
+            if (event.data && event.data.type === 'THEME_CHANGE') {
+                console.log('Received theme change message:', event.data.isDarkMode);
+                // Apply dark or light theme to the map
+                if (map) {
+                    const darkModeStyles = [
+                        { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+                        { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+                        { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+                        { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+                        { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+                        { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#263c3f" }] },
+                        { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#6b9a76" }] },
+                        { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
+                        { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] },
+                        { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b3" }] },
+                        { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#746855" }] },
+                        { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f2835" }] },
+                        { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#f3d19c" }] },
+                        { featureType: "transit", elementType: "geometry", stylers: [{ color: "#2f3948" }] },
+                        { featureType: "transit.station", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+                        { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] },
+                        { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#515c6d" }] },
+                        { featureType: "water", elementType: "labels.text.stroke", stylers: [{ color: "#17263c" }] },
+                        { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }
+                    ];
+
+                    const lightModeStyles = [
+                        { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }
+                    ];
+
+                    map.setOptions({
+                        styles: event.data.isDarkMode ? darkModeStyles : lightModeStyles
+                    });
+
+                    // Update the body class for other styling
+                    document.body.className = event.data.isDarkMode ? 'dark-mode' : 'light-mode';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

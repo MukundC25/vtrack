@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VTrack Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #f3f4f6;
+            color: #333333;
+        }
+
+        /* Dark mode styles */
+        body.dark-mode {
+            background-color: #1f2937;
+            color: #e5e7eb;
+        }
+
+        #map-container {
+            position: relative;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            border-radius: 12px;
+        }
+
+        #loading-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+        }
+
+        body.dark-mode #loading-indicator {
+            background-color: rgba(31, 41, 55, 0.8);
+            color: #e5e7eb;
+        }
+
+        #vehicle-info {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            right: 16px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        body.dark-mode #vehicle-info {
+            background-color: rgba(31, 41, 55, 0.9);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        #vehicle-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+        }
+
+        #vehicle-registration {
+            font-size: 14px;
+            color: #6b7280;
+            margin: 0 0 4px 0;
+        }
+
+        body.dark-mode #vehicle-registration {
+            color: #9ca3af;
+        }
+
+        #vehicle-location {
+            font-size: 14px;
+            margin: 0;
+        }
+
+        #status-indicators {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        body.dark-mode #status-indicators {
+            background-color: rgba(31, 41, 55, 0.9);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        body.dark-mode .status-label {
+            color: #9ca3af;
+        }
+
+        .status-value {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .status-parked {
+            color: #10b981;
+        }
+
+        .status-moving {
+            color: #3b82f6;
+        }
+
+        .status-off {
+            color: #6b7280;
+        }
+
+        .status-on {
+            color: #10b981;
+        }
+
+        #theme-toggle {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark-mode #theme-toggle {
+            background-color: rgba(31, 41, 55, 0.9);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #theme-toggle svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        body.dark-mode #theme-toggle svg {
+            fill: #e5e7eb;
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAD_jCqoP0qoh05t1ShKDwxRQd02pOM7Ts&callback=initMap" async defer></script>
+</head>
+<body>
+    <div id="map-container">
+        <div id="map"></div>
+
+        <div id="loading-indicator">Loading location data...</div>
+
+        <div id="vehicle-info">
+            <h2 id="vehicle-name">Yamaha FZ-S V4</h2>
+            <p id="vehicle-registration">(MH50-329)</p>
+            <p id="vehicle-location">MITAOE Parking, Alandi, Pune</p>
+        </div>
+
+        <div id="status-indicators">
+            <div class="status-item">
+                <div class="status-label">STATUS</div>
+                <div id="status-value" class="status-value status-parked">Parked</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">IGNITION</div>
+                <div id="ignition-value" class="status-value status-off">Off</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">SPEED</div>
+                <div id="speed-value" class="status-value">0 km/h</div>
+            </div>
+        </div>
+
+        <button id="theme-toggle" onclick="toggleTheme()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        let map;
+        let marker;
+        let pulsingCircle;
+        const serverUrl = 'http://192.168.169.156:5003';
+        let isDarkMode = false;
+
+        // Initialize the map
+        function initMap() {
+            console.log('Initializing map...');
+
+            // Default center (Pune)
+            const defaultCenter = {
+                lat: 18.5204,
+                lng: 73.8567
+            };
+
+            // Create the map
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: defaultCenter,
+                zoom: 15,
+                disableDefaultUI: true,
+                zoomControl: false,
+                streetViewControl: false,
+                mapTypeControl: false,
+                fullscreenControl: false,
+                styles: isDarkMode ? getDarkMapStyle() : []
+            });
+
+            // Create the marker
+            marker = new google.maps.Marker({
+                position: defaultCenter,
+                map: map,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 8,
+                    fillColor: '#3b82f6',
+                    fillOpacity: 1,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 2
+                },
+                zIndex: 2
+            });
+
+            // Add a pulsing circle for better visibility
+            pulsingCircle = new google.maps.Marker({
+                position: defaultCenter,
+                map: map,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 16,
+                    fillColor: '#3b82f6',
+                    fillOpacity: 0.3,
+                    strokeColor: '#3b82f6',
+                    strokeWeight: 1,
+                    strokeOpacity: 0.5
+                },
+                zIndex: 1
+            });
+
+            console.log('Map initialized');
+
+            // Fetch location immediately
+            fetchLocation();
+
+            // Set up polling interval
+            setInterval(fetchLocation, 1000);
+
+            // Check for dark mode preference
+            const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDarkMode) {
+                toggleTheme();
+            }
+        }
+
+        // Fetch the latest location
+        function fetchLocation() {
+            console.log('Fetching latest location from:', `${serverUrl}/api/location/latest`);
+
+            // Show loading indicator
+            document.getElementById('loading-indicator').style.display = 'block';
+
+            // Add a timestamp to prevent caching
+            const timestamp = new Date().getTime();
+
+            // Log the request
+            console.log('Sending request to:', `${serverUrl}/api/location/latest?t=${timestamp}`);
+
+            fetch(`${serverUrl}/api/location/latest?t=${timestamp}`, {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                },
+                mode: 'cors',
+                credentials: 'omit'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Received location data:', data);
+
+                // Hide loading indicator
+                document.getElementById('loading-indicator').style.display = 'none';
+
+                if (data && data.position) {
+                    // Parse position values to ensure they are numbers
+                    const position = {
+                        lat: parseFloat(data.position.lat),
+                        lng: parseFloat(data.position.lng)
+                    };
+
+                    console.log('Parsed position:', position);
+
+                    // Update marker position
+                    if (marker) {
+                        marker.setPosition(position);
+                    }
+
+                    // Update pulsing circle position
+                    if (pulsingCircle) {
+                        pulsingCircle.setPosition(position);
+                    }
+
+                    // Pan the map to the new position
+                    if (map) {
+                        map.panTo(position);
+                    }
+
+                    // Update vehicle info
+                    document.getElementById('vehicle-location').textContent = `Lat: ${position.lat.toFixed(4)}, Lng: ${position.lng.toFixed(4)}`;
+
+                    // Update status indicators
+                    const speed = data.speed || 0;
+                    const statusValue = document.getElementById('status-value');
+                    const ignitionValue = document.getElementById('ignition-value');
+                    const speedValue = document.getElementById('speed-value');
+
+                    // Update speed
+                    speedValue.textContent = `${speed} km/h`;
+
+                    // Update status based on speed
+                    if (speed > 0) {
+                        statusValue.textContent = 'Moving';
+                        statusValue.className = 'status-value status-moving';
+
+                        ignitionValue.textContent = 'On';
+                        ignitionValue.className = 'status-value status-on';
+                    } else {
+                        statusValue.textContent = 'Parked';
+                        statusValue.className = 'status-value status-parked';
+
+                        ignitionValue.textContent = 'Off';
+                        ignitionValue.className = 'status-value status-off';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching location:', error);
+
+                // Hide loading indicator
+                document.getElementById('loading-indicator').style.display = 'none';
+
+                // Display error message on the page
+                document.getElementById('vehicle-location').textContent = `Error: ${error.message}`;
+
+                // Try again after a short delay
+                setTimeout(fetchLocation, 5000);
+            });
+        }
+
+        // Toggle dark/light theme
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode', isDarkMode);
+
+            // Update map style
+            if (map) {
+                map.setOptions({
+                    styles: isDarkMode ? getDarkMapStyle() : []
+                });
+            }
+        }
+
+        // Get dark mode style for Google Maps
+        function getDarkMapStyle() {
+            return [
+                { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+                { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+                { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+                {
+                    featureType: 'administrative.locality',
+                    elementType: 'labels.text.fill',
+                    stylers: [{ color: '#d59563' }],
+                },
+                {
+                    featureType: 'poi',
+                    elementType: 'labels.text.fill',
+                    stylers: [{ color: '#d59563' }],
+                },
+                {
+                    featureType: 'poi.park',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#263c3f' }],
+                },
+                {
+                    featureType: 'poi.park',
+                    elementType: 'labels.text.fill',
+                    stylers: [{ color: '#6b9a76' }],
+                },
+                {
+                    featureType: 'road',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#38414e' }],
+                },
+                {
+                    featureType: 'road',
+                    elementType: 'geometry.stroke',
+                    stylers: [{ color: '#212a37' }],
+                },
+                {
+                    featureType: 'road',
+                    elementType: 'labels.text.fill',
+                    stylers: [{ color: '#9ca5b3' }],
+                },
+                {
+                    featureType: 'road.highway',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#746855' }],
+                },
+                {
+                    featureType: 'road.highway',
+                    elementType: 'geometry.stroke',
+                    stylers: [{ color: '#1f2835' }],
+                },
+                {
+                    featureType: 'road.highway',
+                    elementType: 'labels.text.fill',
+                    stylers: [{ color: '#f3d19c' }],
+                },
+                {
+                    featureType: 'transit',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#2f3948' }],
+                },
+                {
+                    featureType: 'transit.station',
+                    elementType: 'labels.text.fill',
+                    stylers: [{ color: '#d59563' }],
+                },
+                {
+                    featureType: 'water',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#17263c' }],
+                },
+                {
+                    featureType: 'water',
+                    elementType: 'labels.text.fill',
+                    stylers: [{ color: '#515c6d' }],
+                },
+                {
+                    featureType: 'water',
+                    elementType: 'labels.text.stroke',
+                    stylers: [{ color: '#17263c' }],
+                },
+            ];
+        }
+
+        // Listen for messages from parent window (React app)
+        window.addEventListener('message', function(event) {
+            // Check if the message is from our parent
+            if (event.data && event.data.type === 'THEME_CHANGE') {
+                if (event.data.isDarkMode !== isDarkMode) {
+                    toggleTheme();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
