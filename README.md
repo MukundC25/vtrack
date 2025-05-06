@@ -131,9 +131,9 @@ The application works with ESP32 microcontrollers that send location data using 
 
 ### ESP32 Configuration
 
-- WiFi SSID: realme 12 Pro 5G
-- Server IP: 192.168.169.156:5003
-- Google Geolocation API Key: AIzaSyAD_jCqoP0qoh05t1ShKDwxRQd02pOM7Ts
+- WiFi SSID
+- Server IP
+- Google Geolocation API Key
 
 ## 🔮 Future Enhancements
 
