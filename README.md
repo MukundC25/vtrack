@@ -4,6 +4,23 @@
 A real-time vehicle tracking web application inspired by platforms like Uber/Ola. VTrack allows you to visualize and monitor vehicles on a map with live updates, smart alerts, and insightful driving statistics.
 
 ---
+## 🗺️ Main Homepage (Showing Tracking Map)
+![Main Homepage](public/images/1.png)
+
+## ╰┈➤ Embedded HTML Map
+![Embedded Map](public/images/2.png)
+
+## </> Backend Server (Flask)
+![Backend Server](public/images/3.png)
+
+## 📩 SMTP based Email Alerts (Link)
+![Email Alerts](public/images/4.png)
+
+## 📍 Live location link through Google Maps
+![Google Maps](public/images/5.png)
+
+
+---
 
 ## ✨ Features
 
