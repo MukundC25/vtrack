@@ -160,7 +160,6 @@ The application works with ESP32 microcontrollers that send location data using 
 - 📍 Geofence boundary alerts
 - ⏪ Historical route playback
 - 🚧 Admin dashboard for managing multiple vehicles
-- 🌓 Dark/Light mode toggle (implemented)
 - 🗺️ Fullscreen map view
 
 ## 📄 License
