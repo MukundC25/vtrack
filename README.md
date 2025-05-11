@@ -25,9 +25,9 @@ A real-time vehicle tracking web application inspired by platforms like Uber/Ola
 ## ✨ Features
 
 - 📍 **Live Location Tracking** – Real-time GPS location updates on Google Maps
-- 🚘 **Vehicle Monitoring** – Check speed, movement status (moving/parked), and direction
-- 📊 **Driving Stats** – Monitor speed, distance traveled, and activity logs
-- 🚨 **Smart Alerts** – Theft detection, overspeed warnings, and geofence breach alerts
+- 🚘 **Vehicle Monitoring** – Check speed, movement status (moving/parked), and direction (static)
+- 📊 **Driving Stats** – Monitor speed, distance traveled, and activity logs (static)
+- 🚨 **Smart Alerts** – Theft detection, overspeed warnings, and geofence breach alerts (static)
 - 🔌 **ESP32 Hardware Integration** – Collects and transmits GPS data to the system
 
 ---
@@ -146,11 +146,11 @@ This project is configured to run in an isolated Docker container to prevent ver
 
 The application works with ESP32 microcontrollers that send location data using Google's Geolocation API. The ESP32 device connects to WiFi and sends HTTP requests to the Flask backend server with location coordinates.
 
-### ESP32 Configuration
+### ESP32 Configuration Requirements
 
-- WiFi SSID: realme 12 Pro 5G
-- Server IP: 192.168.169.156:5003
-- Google Geolocation API Key: AIzaSyAD_jCqoP0qoh05t1ShKDwxRQd02pOM7Ts
+- WiFi SSID
+- Server IP
+- Google Geolocation API Key
 
 ## 🔮 Future Enhancements
 
