@@ -166,4 +166,4 @@ The application works with ESP32 microcontrollers that send location data using 
 
 [MIT](LICENSE)
 
-Made with ❤️ by Mukund Chavan and team
+Made with ❤️ by Tushar Ingle and team
